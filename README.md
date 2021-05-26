@@ -1,2 +1,2 @@
 # sigi
-Keep Teams awake
+Stay awake
