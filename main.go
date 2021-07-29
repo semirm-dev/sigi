@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
-	"github.com/micmonay/keybd_event"
-	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 	"time"
+
+	"github.com/micmonay/keybd_event"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 
 	i := time.Second * time.Duration(*interval)
 
-	logrus.Infof("sigi will ping every %v", i)
+	logrus.Infof("zombie %v", i)
 
 	kb, err := keybd_event.NewKeyBonding()
 	if err != nil {
