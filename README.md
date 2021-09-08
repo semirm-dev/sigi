@@ -1,6 +1,3 @@
 # sigi
-> sudo sigi
-> 
-> // or
-> 
-> sudo sigi -logs=true -interval=120
+
+![img](https://i.imgur.com/TVoC00p.png)
