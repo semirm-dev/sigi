@@ -15,7 +15,7 @@ import (
 func main() {
 	done := make(chan bool)
 
-	interval := flag.Int("interval", 60, "interval in seconds")
+	interval := flag.Int("interval", 120, "interval in seconds")
 	useLogging := flag.Bool("logs", false, "use logging")
 	flag.Parse()
 
@@ -33,7 +33,7 @@ func main() {
 		time.Sleep(2 * time.Second)
 	}
 
-	key := keybd_event.VK_CONNECT
+	key := keybd_event.VK_CAPSLOCK
 	kb.SetKeys(key)
 
 	go func() {
