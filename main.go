@@ -17,11 +17,18 @@ func main() {
 
 	interval := flag.Int("interval", 120, "interval in seconds")
 	useLogging := flag.Bool("logs", false, "use logging")
+	stopAfter := flag.Int("stop", 0, "stop after given minutes")
 	flag.Parse()
 
 	i := time.Second * time.Duration(*interval)
+	startedAt := time.Now()
+	stopAt := startedAt.Add(time.Minute * time.Duration(*stopAfter))
 
 	logrus.Infof("zombie %v", i)
+
+	if *stopAfter > 0 {
+		logrus.Infof("stopAt: %v", stopAt.Format("2006-01-02 15:04:05"))
+	}
 
 	kb, err := keybd_event.NewKeyBonding()
 	if err != nil {
@@ -48,6 +55,11 @@ func main() {
 				if *useLogging {
 					t := time.Now()
 					logrus.Infof("[%s] - key trigger: %v", t.Format("2006-01-02 15:04:05"), key)
+				}
+
+				if *stopAfter > 0 && time.Now().Sub(stopAt) > 1 {
+					close(done)
+					return
 				}
 			}
 		}
