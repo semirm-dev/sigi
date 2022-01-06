@@ -15,6 +15,7 @@ import (
 func main() {
 	done := make(chan bool)
 
+	key := flag.Int("key", keybd_event.VK_RESERVED, "key to trigger")
 	interval := flag.Int("interval", 120, "interval in seconds")
 	useLogging := flag.Bool("logs", false, "use logging")
 	stopAfter := flag.Int("stop", 0, "stop after given minutes")
@@ -40,8 +41,7 @@ func main() {
 		time.Sleep(2 * time.Second)
 	}
 
-	key := keybd_event.VK_CAPSLOCK
-	kb.SetKeys(key)
+	kb.SetKeys(*key)
 
 	go func() {
 		for {
