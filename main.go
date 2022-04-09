@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"github.com/semirm-dev/sigi/keyboard"
-	"github.com/semirm-dev/sigi/listener"
+	"github.com/semirm-dev/sigi/runner"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -20,19 +20,19 @@ var (
 func main() {
 	flag.Parse()
 
-	var listenerCtx context.Context
-	var listenerCancel context.CancelFunc
+	var runnerCtx context.Context
+	var runnerCancel context.CancelFunc
 
 	if *stopAfter > 0 {
 		timeout := time.Duration(*stopAfter) * time.Minute
-		listenerCtx, listenerCancel = context.WithTimeout(context.Background(), timeout)
+		runnerCtx, runnerCancel = context.WithTimeout(context.Background(), timeout)
 	} else {
-		listenerCtx, listenerCancel = context.WithCancel(context.Background())
+		runnerCtx, runnerCancel = context.WithCancel(context.Background())
 	}
 
-	actionListener := listener.NewActionListener(keyboard.NewDefault())
-	actionListener.Interval = time.Duration(*interval) * time.Second
-	finished, errors := actionListener.Listen(listenerCtx)
+	actionRunner := runner.NewActionRunner(keyboard.NewDefault())
+	actionRunner.Interval = time.Duration(*interval) * time.Second
+	finished, errors := actionRunner.RunInterval(runnerCtx)
 
 	go func() {
 		defer func() {
@@ -44,7 +44,7 @@ func main() {
 			select {
 			case err := <-errors:
 				logrus.Error(err)
-			case <-listenerCtx.Done():
+			case <-runnerCtx.Done():
 				return
 			}
 		}
@@ -55,7 +55,7 @@ func main() {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
 
-		listenerCancel()
+		runnerCancel()
 	}()
 
 	logrus.Infof("sigi running...")
