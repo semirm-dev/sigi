@@ -30,9 +30,9 @@ func main() {
 		runnerCtx, runnerCancel = context.WithCancel(context.Background())
 	}
 
-	intervalRunner := runner.NewIntervalRunner(keyboard.NewDefault())
-	intervalRunner.Interval = time.Duration(*interval) * time.Second
-	finished, errors := intervalRunner.RunInterval(runnerCtx)
+	iRunner := runner.NewIntervalRunner(keyboard.NewDefault())
+	iRunner.Interval = time.Duration(*interval) * time.Second
+	finished, errors := iRunner.RunInterval(runnerCtx)
 
 	go func() {
 		defer func() {
