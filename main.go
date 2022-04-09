@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/semirm-dev/sigi/keyboard"
 	"github.com/semirm-dev/sigi/listener"
 	"github.com/sirupsen/logrus"
@@ -11,9 +12,24 @@ import (
 	"time"
 )
 
+var (
+	stopAfter = flag.Int("stop", 0, "stop after given minutes")
+)
+
 func main() {
-	listenerCtx, listenerCancel := context.WithTimeout(context.Background(), 3*time.Second)
-	actionListener := listener.NewActionListener(keyboard.NewMocked())
+	flag.Parse()
+
+	var listenerCtx context.Context
+	var listenerCancel context.CancelFunc
+
+	if *stopAfter > 0 {
+		timeout := time.Duration(*stopAfter) * time.Second
+		listenerCtx, listenerCancel = context.WithTimeout(context.Background(), timeout)
+	} else {
+		listenerCtx, listenerCancel = context.WithCancel(context.Background())
+	}
+
+	actionListener := listener.NewActionListener(keyboard.NewDefault())
 	actionListener.Interval = 1 * time.Second
 	finished, errors := actionListener.Listen(listenerCtx)
 
