@@ -9,7 +9,7 @@ const (
 	defaultInterval = 120 * time.Second
 )
 
-type actionRunner struct {
+type intervalRunner struct {
 	Interval time.Duration
 
 	action Action
@@ -19,14 +19,14 @@ type Action interface {
 	Execute() error
 }
 
-func NewActionRunner(action Action) *actionRunner {
-	return &actionRunner{
+func NewIntervalRunner(action Action) *intervalRunner {
+	return &intervalRunner{
 		Interval: defaultInterval,
 		action:   action,
 	}
 }
 
-func (aRunner *actionRunner) RunInterval(ctx context.Context) (chan bool, chan error) {
+func (aRunner *intervalRunner) RunInterval(ctx context.Context) (chan bool, chan error) {
 	finished := make(chan bool)
 	errors := make(chan error)
 
