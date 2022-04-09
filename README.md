@@ -1,3 +1,3 @@
 # sigi
 
-![img](https://i.imgur.com/TVoC00p.png)
+![img](https://i.imgur.com/9YMPqsP.png)
