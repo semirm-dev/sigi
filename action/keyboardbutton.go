@@ -9,11 +9,11 @@ import (
 	"time"
 )
 
-type Default struct {
+type KeyboardButton struct {
 	bonding keybd_event.KeyBonding
 }
 
-func NewDefault() *Default {
+func NewKeyboardButton() *KeyboardButton {
 	kb, err := keybd_event.NewKeyBonding()
 	if err != nil {
 		logrus.Fatal("action init failed: ", err)
@@ -26,11 +26,11 @@ func NewDefault() *Default {
 
 	kb.SetKeys(keybd_event.VK_CAPSLOCK)
 
-	return &Default{
+	return &KeyboardButton{
 		bonding: kb,
 	}
 }
 
-func (keybd *Default) Execute() error {
+func (keybd *KeyboardButton) Execute() error {
 	return keybd.bonding.Launching()
 }
