@@ -4,7 +4,7 @@ import (
 	"github.com/go-vgo/robotgo"
 )
 
-var defaultMouseMovement = 1
+var mouseMovementIndex = 1
 
 type MouseMove struct {
 	initialPosition bool
@@ -32,12 +32,12 @@ func (mouse *MouseMove) Execute() error {
 	return nil
 }
 
-func (mouse *MouseMove) moveLeft() {
-	x := defaultMouseMovement * -1
+func (mouse *MouseMove) moveRight() {
+	x := mouseMovementIndex
 	robotgo.MoveRelative(x, 0)
 }
 
-func (mouse *MouseMove) moveRight() {
-	x := defaultMouseMovement
+func (mouse *MouseMove) moveLeft() {
+	x := mouseMovementIndex * -1
 	robotgo.MoveRelative(x, 0)
 }
