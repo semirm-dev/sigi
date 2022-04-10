@@ -8,13 +8,10 @@ import (
 var mouseMovementIndex = 1
 
 type MouseMove struct {
-	initialPosition bool
 }
 
 func NewMouseMove() *MouseMove {
-	return &MouseMove{
-		initialPosition: true,
-	}
+	return &MouseMove{}
 }
 
 func (mouse *MouseMove) Execute() error {
