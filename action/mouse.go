@@ -2,6 +2,7 @@ package action
 
 import (
 	"github.com/go-vgo/robotgo"
+	"time"
 )
 
 var mouseMovementIndex = 1
@@ -17,17 +18,9 @@ func NewMouseMove() *MouseMove {
 }
 
 func (mouse *MouseMove) Execute() error {
-	if !mouse.initialPosition {
-		mouse.moveLeft()
-
-		mouse.initialPosition = true
-
-		return nil
-	}
-
 	mouse.moveRight()
-
-	mouse.initialPosition = false
+	time.Sleep(10 * time.Millisecond)
+	mouse.moveLeft()
 
 	return nil
 }
