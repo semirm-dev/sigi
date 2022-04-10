@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/semirm-dev/sigi/keyboard"
+	"github.com/semirm-dev/sigi/action"
 	"github.com/semirm-dev/sigi/runner"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -30,7 +30,7 @@ func main() {
 		runnerCtx, runnerCancel = context.WithCancel(context.Background())
 	}
 
-	iRunner := runner.NewIntervalRunner(keyboard.NewDefault())
+	iRunner := runner.NewIntervalRunner(action.NewMouseMove())
 	iRunner.Interval = time.Duration(*interval) * time.Second
 	finished, errors := iRunner.RunInterval(runnerCtx)
 

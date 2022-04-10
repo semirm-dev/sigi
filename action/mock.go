@@ -1,4 +1,4 @@
-package keyboard
+package action
 
 import "github.com/sirupsen/logrus"
 

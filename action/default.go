@@ -1,4 +1,6 @@
-package keyboard
+//go:build linux || windows
+
+package action
 
 import (
 	"github.com/micmonay/keybd_event"
@@ -14,7 +16,7 @@ type Default struct {
 func NewDefault() *Default {
 	kb, err := keybd_event.NewKeyBonding()
 	if err != nil {
-		logrus.Fatal("keyboard init failed: ", err)
+		logrus.Fatal("action init failed: ", err)
 	}
 
 	// For linux, it is very important to wait 2 seconds
