@@ -29,7 +29,7 @@ func (aRunner *intervalRunner) RunInterval(ctx context.Context) (chan bool, chan
 	finished := make(chan bool)
 	errors := make(chan error)
 
-	go func(ctx context.Context, finished chan bool, errors chan error) {
+	go func(ctx context.Context) {
 		defer func() {
 			finished <- true
 		}()
@@ -44,7 +44,7 @@ func (aRunner *intervalRunner) RunInterval(ctx context.Context) (chan bool, chan
 				return
 			}
 		}
-	}(ctx, finished, errors)
+	}(ctx)
 
 	return finished, errors
 }
