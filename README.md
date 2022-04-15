@@ -1,3 +1,5 @@
-# sigi
+## sigi
 
-![img](https://i.imgur.com/9YMPqsP.png)
+```shell
+go run -race main.go --interval=1 --stop=60
+```

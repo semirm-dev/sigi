@@ -2,8 +2,8 @@ package action
 
 import "github.com/sirupsen/logrus"
 
-type Mock struct {
-}
+// Mock action will only log into console.
+type Mock struct{}
 
 func NewMocked() *Mock {
 	return &Mock{}

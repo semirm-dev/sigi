@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// KeyboardButton action will execute keyboard button.
+// VK_CAPSLOCK current implementation.
 type KeyboardButton struct {
 	bonding keybd_event.KeyBonding
 }

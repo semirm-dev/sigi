@@ -6,26 +6,24 @@ import (
 	"time"
 )
 
-const (
-	defaultInterval = 120 * time.Second
-)
-
 type intervalRunner struct {
-	Interval time.Duration
+	interval time.Duration
 	action   Action
 }
 
+// Action to execute after each interval tick
 type Action interface {
 	Execute() error
 }
 
-func NewIntervalRunner(action Action) *intervalRunner {
+func NewIntervalRunner(action Action, interval time.Duration) *intervalRunner {
 	return &intervalRunner{
-		Interval: defaultInterval,
+		interval: interval,
 		action:   action,
 	}
 }
 
+// RunInterval will start ticking and execute provided Action.
 func (aRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
 	finished := make(chan bool)
 	errors := make(chan error)
@@ -39,7 +37,7 @@ func (aRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
 
 		for {
 			select {
-			case <-time.After(aRunner.Interval):
+			case <-time.After(aRunner.interval):
 				if err := aRunner.action.Execute(); err != nil {
 					errors <- err
 				}

@@ -7,8 +7,8 @@ import (
 
 var mouseMovementIndex = 1
 
-type MouseMove struct {
-}
+// MouseMove action will move mouse cursor right and left.
+type MouseMove struct{}
 
 func NewMouseMove() *MouseMove {
 	return &MouseMove{}
