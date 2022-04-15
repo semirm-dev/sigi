@@ -24,7 +24,7 @@ func NewIntervalRunner(action Action, interval time.Duration) *intervalRunner {
 }
 
 // RunInterval will start ticking and execute provided Action.
-func (aRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
+func (iRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
 	finished := make(chan bool)
 	errors := make(chan error)
 
@@ -37,8 +37,8 @@ func (aRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
 
 		for {
 			select {
-			case <-time.After(aRunner.interval):
-				if err := aRunner.action.Execute(); err != nil {
+			case <-time.After(iRunner.interval):
+				if err := iRunner.action.Execute(); err != nil {
 					errors <- err
 				}
 			case <-ctx.Done():
