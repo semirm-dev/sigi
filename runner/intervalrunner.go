@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -25,9 +26,11 @@ func NewIntervalRunner(action Action) *intervalRunner {
 	}
 }
 
-func (aRunner *intervalRunner) RunInterval(ctx context.Context) (chan bool, chan error) {
+func (aRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
 	finished := make(chan bool)
 	errors := make(chan error)
+
+	go listenForErrors(ctx, errors)
 
 	go func(ctx context.Context) {
 		defer func() {
@@ -46,5 +49,20 @@ func (aRunner *intervalRunner) RunInterval(ctx context.Context) (chan bool, chan
 		}
 	}(ctx)
 
-	return finished, errors
+	return finished
+}
+
+func listenForErrors(ctx context.Context, errors chan error) {
+	defer func() {
+		logrus.Infof("errors listener stopped")
+	}()
+
+	for {
+		select {
+		case err := <-errors:
+			logrus.Error(err)
+		case <-ctx.Done():
+			return
+		}
+	}
 }
