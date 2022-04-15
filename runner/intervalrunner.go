@@ -11,8 +11,7 @@ const (
 
 type intervalRunner struct {
 	Interval time.Duration
-
-	action Action
+	action   Action
 }
 
 type Action interface {

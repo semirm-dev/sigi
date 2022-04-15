@@ -36,7 +36,6 @@ func main() {
 
 	go func() {
 		defer func() {
-			close(errors)
 			logrus.Infof("errors listener stopped")
 		}()
 
@@ -61,7 +60,6 @@ func main() {
 	logrus.Infof("sigi running...")
 
 	<-finished
-	close(finished)
 
 	logrus.Info("sigi stopped")
 }
