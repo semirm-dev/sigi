@@ -15,11 +15,13 @@ import (
 var (
 	interval  int
 	stopAfter int
+	logs      bool
 )
 
 func init() {
 	sigi.Flags().IntVarP(&interval, "interval", "i", 120, "interval in seconds")
 	sigi.Flags().IntVarP(&stopAfter, "stop", "s", 0, "stop after given minutes")
+	sigi.Flags().BoolVarP(&logs, "logs", "l", false, "log each action")
 }
 
 var sigi = &cobra.Command{
@@ -38,7 +40,7 @@ var sigi = &cobra.Command{
 		}
 
 		iRunner := runner.NewIntervalRunner(action.NewMouseMove(), time.Duration(interval)*time.Second)
-		finished := iRunner.RunInterval(runnerCtx)
+		finished := iRunner.RunInterval(runnerCtx, logs)
 
 		go listenForShutdown(runnerCancel)
 

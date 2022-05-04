@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"github.com/sirupsen/logrus"
+	"reflect"
 	"time"
 )
 
@@ -24,7 +25,7 @@ func NewIntervalRunner(action Action, interval time.Duration) *intervalRunner {
 }
 
 // RunInterval will start ticking and execute provided Action.
-func (iRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
+func (iRunner *intervalRunner) RunInterval(ctx context.Context, log bool) chan bool {
 	finished := make(chan bool)
 	errors := make(chan error)
 
@@ -32,7 +33,7 @@ func (iRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
 
 	go func(ctx context.Context) {
 		defer func() {
-			finished <- true
+			close(finished)
 		}()
 
 		for {
@@ -40,6 +41,10 @@ func (iRunner *intervalRunner) RunInterval(ctx context.Context) chan bool {
 			case <-time.After(iRunner.interval):
 				if err := iRunner.action.Execute(); err != nil {
 					errors <- err
+				}
+
+				if log {
+					logrus.Info("action executed: ", reflect.TypeOf(iRunner.action))
 				}
 			case <-ctx.Done():
 				return
