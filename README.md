@@ -1,4 +1,4 @@
-![alt Go](https://img.shields.io/github/go-mod/go-version/semirm-dev/sigig)
+![alt Go](https://img.shields.io/github/go-mod/go-version/semirm-dev/sigi)
 
 Stay awake, always appear online on messaging apps, avoid corporate's profile blocking your "sleep" options and forced screensaver :)
 
