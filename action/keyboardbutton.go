@@ -21,7 +21,7 @@ func NewKeyboardButton() *KeyboardButton {
 		logrus.Fatal("action init failed: ", err)
 	}
 
-	// For linux, it is very important to wait 2 seconds
+	// for linux, it is very important to wait 2 seconds
 	if runtime.GOOS == "linux" {
 		time.Sleep(2 * time.Second)
 	}

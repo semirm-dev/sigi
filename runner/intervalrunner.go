@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-type intervalRunner struct {
+// IntervalRunner will execute actions in configured inervals
+type IntervalRunner struct {
 	interval time.Duration
 	action   Action
 }
@@ -17,25 +18,21 @@ type Action interface {
 	Execute() error
 }
 
-func NewIntervalRunner(action Action, interval time.Duration) *intervalRunner {
-	return &intervalRunner{
+func NewIntervalRunner(action Action, interval time.Duration) *IntervalRunner {
+	return &IntervalRunner{
 		interval: interval,
 		action:   action,
 	}
 }
 
-// RunInterval will start ticking and execute provided Action.
-func (iRunner *intervalRunner) RunInterval(ctx context.Context, log bool) chan bool {
+// RunInterval will start ticking and execute configured Action.
+func (iRunner *IntervalRunner) RunInterval(ctx context.Context, showLogs bool) chan bool {
 	finished := make(chan bool)
 	errors := make(chan error)
 
 	go listenForErrors(ctx, errors)
 
 	go func(ctx context.Context) {
-		defer func() {
-			close(finished)
-		}()
-
 		for {
 			select {
 			case <-time.After(iRunner.interval):
@@ -43,7 +40,7 @@ func (iRunner *intervalRunner) RunInterval(ctx context.Context, log bool) chan b
 					errors <- err
 				}
 
-				if log {
+				if showLogs {
 					logrus.Info("action executed: ", reflect.TypeOf(iRunner.action))
 				}
 			case <-ctx.Done():
