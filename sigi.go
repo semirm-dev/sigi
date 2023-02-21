@@ -1,4 +1,4 @@
-package cmd
+package sigi
 
 import (
 	"context"
@@ -19,12 +19,12 @@ var (
 )
 
 func init() {
-	sigi.Flags().IntVarP(&interval, "interval", "i", 120, "interval in seconds")
-	sigi.Flags().IntVarP(&stopAfter, "stop", "s", 0, "stop after given minutes")
-	sigi.Flags().BoolVarP(&showLogs, "logs", "l", false, "log each action")
+	rootCmd.Flags().IntVarP(&interval, "interval", "i", 120, "interval in seconds")
+	rootCmd.Flags().IntVarP(&stopAfter, "stop", "s", 0, "stop after given minutes")
+	rootCmd.Flags().BoolVarP(&showLogs, "logs", "l", false, "log each action")
 }
 
-var sigi = &cobra.Command{
+var rootCmd = &cobra.Command{
 	Use:   "",
 	Short: "Keep alive :)",
 	Long:  `Keep alive :)`,
@@ -40,13 +40,15 @@ var sigi = &cobra.Command{
 		}
 
 		iRunner := runner.NewIntervalRunner(action.NewMouseMove(), time.Duration(interval)*time.Second)
-		finished := iRunner.RunInterval(runnerCtx, showLogs)
-
-		go listenForShutdown(runnerCancel)
+		iRunner.RunInterval(runnerCtx, showLogs)
 
 		logrus.Infof("sigi running...")
 
-		<-finished
+		quit := make(chan os.Signal)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		<-quit
+
+		runnerCancel()
 
 		logrus.Info("sigi stopped")
 	},
@@ -54,13 +56,5 @@ var sigi = &cobra.Command{
 
 // Execute will trigger root command.
 func Execute() error {
-	return sigi.Execute()
-}
-
-func listenForShutdown(cancel context.CancelFunc) {
-	quit := make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	cancel()
+	return rootCmd.Execute()
 }
