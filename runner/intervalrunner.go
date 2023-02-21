@@ -26,30 +26,25 @@ func NewIntervalRunner(action Action, interval time.Duration) *IntervalRunner {
 }
 
 // RunInterval will start ticking and execute configured Action.
-func (iRunner *IntervalRunner) RunInterval(ctx context.Context, showLogs bool) chan bool {
-	finished := make(chan bool)
+func (iRunner *IntervalRunner) RunInterval(ctx context.Context, showLogs bool) {
 	errors := make(chan error)
 
 	go listenForErrors(ctx, errors)
 
-	go func(ctx context.Context) {
-		for {
-			select {
-			case <-time.After(iRunner.interval):
-				if err := iRunner.action.Execute(); err != nil {
-					errors <- err
-				}
-
-				if showLogs {
-					logrus.Info("action executed: ", reflect.TypeOf(iRunner.action))
-				}
-			case <-ctx.Done():
-				return
+	for {
+		select {
+		case <-time.After(iRunner.interval):
+			if err := iRunner.action.Execute(); err != nil {
+				errors <- err
 			}
-		}
-	}(ctx)
 
-	return finished
+			if showLogs {
+				logrus.Info("action executed: ", reflect.TypeOf(iRunner.action))
+			}
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func listenForErrors(ctx context.Context, errors chan error) {
