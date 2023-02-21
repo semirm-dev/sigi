@@ -28,6 +28,7 @@ var rootCmd = &cobra.Command{
 	Long:  `Keep alive :)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		iRunner := runner.NewIntervalRunner(action.NewMouseMove(), time.Duration(interval)*time.Second)
+
 		go iRunner.RunInterval(context.Background(), showLogs)
 
 		logrus.Infof("sigi running...")
