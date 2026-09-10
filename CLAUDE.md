@@ -1,48 +1,96 @@
-# sigi
+# CLAUDE.md
 
-Keep-alive CLI utility that prevents system idle/sleep by performing periodic mouse or keyboard actions.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What sigi is
+
+A foreground CLI that stops a machine going idle, by nudging the mouse a pixel
+or tapping caps lock on a timer. It runs until Ctrl-C.
 
 ## Commands
 
-```shell
-make run          # go run cmd/main.go
-make build        # GOOS=darwin GOARCH=arm64 go build -o build/sigi-darwin-arm64 ./cmd/main.go
-make test         # go test -v ./...
-make test-cover   # tests with HTML coverage report
+```bash
+make build    # .build/sigi, version stamped from VERSION
+make run      # run from source
+make lint     # gofmt, goimports, declaration order, vet -- run before committing
+make order    # rewrite declarations into the house order
+make test     # go test ./... -race -count=1
 ```
 
-## Project Structure
+A single test runs with `go test ./internal/keepalive/ -run TestName -count=1`.
 
+**Building needs cgo and X11 development headers.** `robotgo` drives real input
+devices, so `CGO_ENABLED=0` will not build and neither will cross-compilation:
+each platform must be built on that platform. On Debian and Ubuntu the headers
+are `libx11-dev`, `libxtst-dev`, `xorg-dev`. Without them `go build ./...`
+fails on a missing `X11/Xutil.h`, which looks like a code error and is not.
+
+To type-check without those headers, point the module at a stub:
+
+```bash
+go mod edit -replace github.com/go-vgo/robotgo=/path/to/stub
 ```
-cmd/main.go                     — entry point, calls sigi.Execute()
-sigi.go                         — Cobra root command, CLI flags (--interval, --logs), signal handling
-action/mouse.go                 — MouseMove: moves mouse 1px right/left via robotgo (all platforms)
-action/keyboardbutton.go        — KeyboardButton: toggles CAPSLOCK via keybd_event (linux||windows build tag)
-runner/intervalrunner.go        — IntervalRunner struct, Action interface, ticker loop with context cancellation
-runner/intervalrunner_test.go   — tests using testify/assert and mock Action
-```
+
+where the stub is a module named `github.com/go-vgo/robotgo` exposing
+`func MoveRelative(x, y int)`. Undo it with `go mod edit -dropreplace`.
 
 ## Architecture
 
-- **Action interface** (`runner/intervalrunner.go`): `Execute() error` — implemented by `MouseMove` and `KeyboardButton`
-- **IntervalRunner** (`runner/intervalrunner.go`): runs an Action on a timer, supports context cancellation and error channel
-- **CLI** (`sigi.go`): Cobra command wires IntervalRunner with MouseMove, handles SIGINT/SIGTERM
-- **Platform selection**: `keyboardbutton.go` uses `//go:build linux || windows` build tag; `mouse.go` has no build tag (available everywhere). Currently `sigi.go` always uses `MouseMove` regardless of platform.
+```
+cmd/sigi/            main: signal.NotifyContext, and one command
+internal/keepalive/  the loop, the two actions, and the command that drives them
+```
+
+**The command lives with the feature it drives.** `keepalive.Command` builds the
+cobra command, owns the flags, and prints; `cmd/sigi` only wires signals to it.
+
+**The Runner does timing and nothing else.** What happens on a tick is an
+`Action`; reporting is `reporting`, a decorator around one, which is how
+`--verbose` works without the loop knowing what a terminal is. Do not put
+writers or flags on `Runner`.
+
+**`Action` is an interface because there are three implementations** — mouse,
+keyboard, and the counting one in the tests. That is the bar: do not add an
+interface with a single implementation.
+
+**Nothing is a package-level variable** except `Version`. Flags are locals in
+`Command`, closed over by `RunE`, so two commands can exist in one process and
+tests do not fight each other.
+
+**Run stops on the first failed Action** rather than logging and continuing. A
+keep-alive whose action does not work is not keeping anything alive.
+
+**Both actions work on all three platforms.** keybd_event ships
+keybd_darwin.go, keybd_linux.go and keybd_windows.go, all defining
+VK_CAPSLOCK, so the keyboard action needs no build tag -- the original code
+carried a `linux || windows` one that was simply wrong.
+
+**The mouse action needs X11 on Linux.** robotgo's mouse is Xlib and XTest;
+its wayland file is inert, and its build tag is misspelled `+bulid` so it never
+compiles anyway. `NewMouse` therefore refuses on Linux when `$WAYLAND_DISPLAY`
+or `XDG_SESSION_TYPE=wayland` is set, or when `$DISPLAY` is empty, and names
+`--action keyboard` as the way out. Keep that check: a keep-alive that ticks
+for hours while the screen locks behind it is the failure worth preventing, and
+it is invisible without it.
+
+## Declaration order
+
+Every file orders its top-level declarations this way, and `make lint` fails if
+one does not:
+
+1. constants
+2. variables
+3. exported types
+4. unexported types
+5. exported functions
+6. exported methods
+7. unexported methods
+8. unexported functions
+
+`scripts/order.py` does the rewriting; `--check` reports without rewriting.
 
 ## Conventions
 
-- Build tags (`//go:build`) for platform-specific code
-- `logrus` for all logging
-- `testify/assert` for test assertions
-- Mock structs implementing Action interface for testing
-- Cobra for CLI with `init()` flag registration
-
-## Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `go-vgo/robotgo` | Mouse/keyboard control |
-| `micmonay/keybd_event` | Keyboard simulation (Linux/Windows) |
-| `sirupsen/logrus` | Logging |
-| `spf13/cobra` | CLI framework |
-| `stretchr/testify` | Testing |
+Imports are grouped stdlib / third-party / local. Error strings are lowercase
+and unpunctuated. No stuttering: the package is `keepalive`, so the types are
+`Runner`, `Mouse`, `Keyboard` — not `KeepaliveRunner`.

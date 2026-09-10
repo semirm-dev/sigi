@@ -1,6 +1,6 @@
 module github.com/semirm-dev/sigi
 
-go 1.25.5
+go 1.27.1
 
 require (
 	github.com/go-vgo/robotgo v1.0.1
@@ -38,6 +38,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39 // indirect
 	golang.org/x/image v0.33.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260908163034-4bcc4b2ee518 // indirect
+	golang.org/x/tools v0.50.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+tool golang.org/x/tools/cmd/goimports

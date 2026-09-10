@@ -1,0 +1,80 @@
+# Builds sigi for every platform it supports.
+#
+# There is no cross-compilation here and there cannot be: sigi drives real
+# input devices through cgo, so each binary has to be built on the operating
+# system it targets, with that system's headers. Hence one job per runner.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            name: linux-amd64
+          - runner: macos-latest
+            name: darwin-arm64
+          - runner: macos-13
+            name: darwin-amd64
+          - runner: windows-latest
+            name: windows-amd64
+            ext: .exe
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # Only Linux needs anything installed: robotgo's mouse is Xlib and XTest.
+      # macOS has the frameworks in the SDK, Windows links user32 at runtime.
+      - name: X11 headers
+        if: matrix.runner == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxtst-dev xorg-dev
+
+      - name: Build
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          go build -trimpath -buildvcs=false \
+            -ldflags "-s -w -X github.com/semirm-dev/sigi/internal/keepalive.Version=${{ github.ref_name }}" \
+            -o sigi-${{ matrix.name }}${{ matrix.ext }} ./cmd/sigi
+
+      - name: Check it runs
+        run: ./sigi-${{ matrix.name }}${{ matrix.ext }} --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sigi-${{ matrix.name }}
+          path: sigi-${{ matrix.name }}${{ matrix.ext }}
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Checksums
+        run: sha256sum sigi-* > SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sigi-*
+            SHA256SUMS
