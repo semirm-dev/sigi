@@ -1,70 +1,33 @@
-BINARY  := sigi
-MODULE  := github.com/semirm-dev/sigi
-BUILD   := .build
-BIN     := bin
-VERSION := $(shell cat VERSION 2>/dev/null || echo dev)
-LDFLAGS := -ldflags "-s -w -X $(MODULE)/internal/keepalive.Version=$(VERSION)"
-COVERFILE := coverprofile
+# A thin wrapper: the build lives in build.zig, and these only save typing.
+ZIG     ?= zig
+TARGETS := x86_64-linux aarch64-linux x86_64-windows aarch64-windows
+# Zig only finds the macOS SDK for native builds, so a Mac adds just itself.
+ifeq ($(shell uname -s),Darwin)
+TARGETS += native
+endif
 
-.PHONY: help build install run test test-cover lint order release tidy clean
+.PHONY: help build run test lint release clean
 
 help: ## Show available targets
-	@echo "Usage: make <target>"
-	@echo ""
-	@echo "  build       Build $(BUILD)/$(BINARY) for this machine."
-	@echo "  install     Install sigi into GOBIN."
-	@echo "  run         Run sigi from source."
-	@echo "  test        Run the test suite with race detection."
-	@echo "  test-cover  Run tests and open the coverage report."
-	@echo "  lint        gofmt, goimports, declaration order and go vet."
-	@echo "  order       Reorder declarations to the house order."
-	@echo "  release     Build a release binary for this machine (see CI for the rest)."
-	@echo "  tidy        go mod tidy."
-	@echo "  clean       Remove build output."
+	@grep -E '^[a-z]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-8s %s\n", $$1, $$2}'
 
-build: ## Build the sigi binary
-	@mkdir -p $(BUILD)
-	go build $(LDFLAGS) -o $(BUILD)/$(BINARY) ./cmd/sigi
+build: ## Build zig-out/bin/sigi for this machine
+	$(ZIG) build
 
-install: ## Install sigi into GOBIN
-	go install $(LDFLAGS) ./cmd/sigi
+run: ## Run sigi; pass flags with ARGS="-i 30s -v"
+	$(ZIG) build run -- $(ARGS)
 
-run: ## Run sigi from source
-	go run ./cmd/sigi
+test: ## Run the unit tests
+	$(ZIG) build test --summary all
 
-test: ## Run tests with race detection
-	go test ./... -race -count=1
+lint: ## Check formatting
+	$(ZIG) fmt --check build.zig build.zig.zon src
 
-test-cover: ## Run tests and open the coverage report
-	go test ./... -coverprofile=$(COVERFILE)
-	go tool cover -html=$(COVERFILE) && go tool cover -func $(COVERFILE) && unlink $(COVERFILE)
-
-lint: ## Check formatting, import grouping, declaration order and run vet
-	@test -z "$$(gofmt -l . | tee /dev/stderr)" || (echo "gofmt found issues" && exit 1)
-	@test -z "$$(go tool goimports -local $(MODULE) -l . | tee /dev/stderr)" || (echo "goimports found issues" && exit 1)
-	@python3 scripts/order.py --check $$(find internal cmd -name '*.go') \
-		|| (echo "run 'make order' to fix" && exit 1)
-	go vet ./...
-
-release: ## Build a release binary for THIS machine only
-	@mkdir -p $(BIN)
-	@os=$$(go env GOOS); arch=$$(go env GOARCH); ext=""; \
-		[ "$$os" = "windows" ] && ext=".exe"; \
-		out=$(BIN)/$(BINARY)-$$os-$$arch$$ext; \
-		CGO_ENABLED=1 go build -trimpath -buildvcs=false \
-			-ldflags "-s -w -X $(MODULE)/internal/keepalive.Version=$(VERSION)" \
-			-o $$out ./cmd/sigi; \
-		echo "  $$out"
-	@echo "  sigi cannot cross-compile: it drives input devices through cgo, so each"
-	@echo "  platform must be built on that platform. .github/workflows/release.yml"
-	@echo "  does all of them, one runner each."
-
-order: ## Reorder declarations to the house order
-	@python3 scripts/order.py $$(find internal cmd -name '*.go')
-	@gofmt -w .
-
-tidy: ## Tidy the module graph
-	go mod tidy
+release: ## ReleaseSmall binaries under zig-out/release/<target>
+	@for t in $(TARGETS); do \
+		$(ZIG) build -Doptimize=ReleaseSmall -Dtarget=$$t --prefix zig-out/release/$$t || exit 1; \
+		echo "  zig-out/release/$$t"; \
+	done
 
 clean: ## Remove build output
-	rm -rf $(BUILD) $(BIN) build
+	rm -rf zig-out .zig-cache
