@@ -41,22 +41,37 @@ not to the `sigi` binary. If you switch terminals, grant it again.
 
 **X11 and Wayland both work.** `sigi` creates a virtual mouse through
 `/dev/uinput`, which the kernel treats as hardware, so it never talks to a
-display server. It needs access to that device:
+display server. It needs access to that device, and nothing grants it by
+default: udev's stock rules put `SUBSYSTEM=="input"` devices in the `input`
+group, and `uinput` is in `misc`, so it stays `root:root 0600`. Joining the
+group does nothing until a rule puts the device in it, so do both:
 
 ```bash
+echo 'KERNEL=="uinput", SUBSYSTEM=="misc", GROUP="input", MODE="0660", OPTIONS+="static_node=uinput"' \
+  | sudo tee /etc/udev/rules.d/99-uinput.rules
+sudo usermod -aG input "$USER"
 sudo modprobe uinput                        # if /dev/uinput is missing
-sudo usermod -aG input "$USER"              # then log out and back in
 ```
 
-If the group is not enough, a udev rule makes it stick across reboots:
+Then reboot, or apply both halves in place:
 
 ```bash
-echo 'KERNEL=="uinput", GROUP="input", MODE="0660"'   | sudo tee /etc/udev/rules.d/99-uinput.rules
-sudo udevadm control --reload-rules && sudo udevadm trigger
+sudo udevadm control --reload-rules && sudo systemctl restart systemd-udevd
+newgrp input                                # this shell only; log in again for the rest
 ```
 
-`sudo chmod 0666 /dev/uinput` also works, but it does not survive a reboot and
-opens the device to everything.
+`OPTIONS+="static_node=uinput"` is the part that is easy to leave out. Until
+something loads the module, udev creates `/dev/uinput` ahead of time from
+`modules.devname`, and a rule without that option never reaches the node it
+made — which is also why restarting udev applies the rule and `udevadm
+trigger` does not.
+
+`sudo chmod 0666 /dev/uinput` works for the current boot, and opens the device
+to every process on the machine.
+
+**WSL is the exception.** The rule above works there, but the virtual mouse
+lives inside the WSL VM, where Windows cannot see it, so it will not hold off a
+Windows idle timer. Use the Windows binary from a Windows shell instead.
 
 ### Windows
 

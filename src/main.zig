@@ -103,7 +103,7 @@ fn parseDuration(text: []const u8) ?u64 {
 fn describe(err: anyerror) []const u8 {
     return switch (err) {
         error.UinputMissing => "/dev/uinput does not exist: run 'sudo modprobe uinput'",
-        error.UinputDenied => "no permission to open /dev/uinput: run 'sudo usermod -aG input $USER' and log in again (the README has a udev rule if that is not enough)",
+        error.UinputDenied => "no permission to open /dev/uinput: joining the input group is not enough on its own, the README has the udev rule that goes with it",
         error.AccessibilityDenied => "macOS ignores synthetic input without Accessibility: System Settings > Privacy & Security > Accessibility, then add your terminal",
         else => @errorName(err),
     };

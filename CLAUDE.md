@@ -58,6 +58,22 @@ hardware, which is why Wayland works and why the build needs no system
 headers. Do not reintroduce a display-server library. The device needs
 `BTN_LEFT`, `REL_X` and `REL_Y`, or udev will not tag it as a mouse.
 
+**Nothing grants access to `/dev/uinput` by default,** so most of the Linux
+support burden is a permissions problem, not a code one. Stock udev groups
+`SUBSYSTEM=="input"` devices and uinput is `misc`, so it stays `root:root
+0600` and joining the `input` group on its own changes nothing. The rule that
+works carries `OPTIONS+="static_node=uinput"`: udev pre-creates the node from
+`modules.devname` before the module is loaded, and a rule without that option
+never matches the node it made — which is also why restarting `systemd-udevd`
+applies the rule and `udevadm trigger` does not. The advice lives in two
+places, the README's Linux section and `describe`'s `UinputDenied` string.
+Change them together.
+
+**WSL runs sigi but cannot keep Windows awake.** The virtual mouse lives in
+the WSL VM, invisible to the Windows session whose idle timer is the actual
+target. The answer there is the cross-compiled Windows binary, not a Linux-side
+fix — do not chase it as a uinput bug.
+
 **macOS checks `AXIsProcessTrusted()` before the first tick.** Without
 Accessibility, Quartz accepts events and silently drops them, so sigi would
 tick for hours while the screen locks. Keep the check.
