@@ -1,8 +1,8 @@
 # Builds sigi for every platform it supports.
 #
-# There is no cross-compilation here and there cannot be: sigi drives real
-# input devices through cgo, so each binary has to be built on the operating
-# system it targets, with that system's headers. Hence one job per runner.
+# Linux and Windows are raw syscalls and Win32 externs, so they cross-compile
+# from one Ubuntu runner. macOS links Apple's frameworks, and Zig only finds the
+# SDK for native builds, so macOS is a native arm64 build on a macOS runner.
 name: release
 
 on:
@@ -20,46 +20,39 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-latest
-            name: linux-amd64
+            targets: x86_64-linux aarch64-linux x86_64-windows aarch64-windows
           - runner: macos-latest
-            name: darwin-arm64
-          - runner: macos-13
-            name: darwin-amd64
-          - runner: windows-latest
-            name: windows-amd64
-            ext: .exe
+            targets: native
 
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
+      - uses: mlugg/setup-zig@v2
         with:
-          go-version-file: go.mod
+          version: 0.16.0
 
-      # Only Linux needs anything installed: robotgo's mouse is Xlib and XTest.
-      # macOS has the frameworks in the SDK, Windows links user32 at runtime.
-      - name: X11 headers
-        if: matrix.runner == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libx11-dev libxtst-dev xorg-dev
+      # The version lives in build.zig.zon; a tag that disagrees is a mistake.
+      - name: Tag matches build.zig.zon
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: grep -q "\.version = \"${GITHUB_REF_NAME#v}\"" build.zig.zon
 
       - name: Build
-        env:
-          CGO_ENABLED: "1"
         run: |
-          go build -trimpath -buildvcs=false \
-            -ldflags "-s -w -X github.com/semirm-dev/sigi/internal/keepalive.Version=${{ github.ref_name }}" \
-            -o sigi-${{ matrix.name }}${{ matrix.ext }} ./cmd/sigi
+          for t in ${{ matrix.targets }}; do
+            zig build -Doptimize=ReleaseSmall -Dtarget=$t --prefix out/$t
+            ext=""; case $t in *windows) ext=.exe ;; esac
+            name=$t; [ "$t" = native ] && name=aarch64-macos
+            cp out/$t/bin/sigi$ext sigi-$name$ext
+          done
 
-      - name: Check it runs
-        run: ./sigi-${{ matrix.name }}${{ matrix.ext }} --version
+      - name: Check the native one runs
+        run: zig build -Doptimize=ReleaseSmall && ./zig-out/bin/sigi --version
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sigi-${{ matrix.name }}
-          path: sigi-${{ matrix.name }}${{ matrix.ext }}
+          name: sigi-${{ matrix.runner }}
+          path: sigi-*
 
   release:
     needs: build

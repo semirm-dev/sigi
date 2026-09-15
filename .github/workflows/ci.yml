@@ -1,22 +1,28 @@
-# Lint and test on every push. Linux only: the code that differs by platform is
-# thin, and the release workflow already proves it compiles on all three.
+# Format, test and cross-compile on every push. Only the native platform's
+# code runs in tests, so every other target has to at least compile.
 name: ci
 
 on: [push, pull_request]
 
 jobs:
-  check:
+  linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: mlugg/setup-zig@v2
         with:
-          go-version-file: go.mod
+          version: 0.16.0
+      - run: zig fmt --check build.zig build.zig.zon src
+      - run: zig build test --summary all
+      - run: zig build -Dtarget=aarch64-linux
+      - run: zig build -Dtarget=x86_64-windows
 
-      - name: X11 headers
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libx11-dev libxtst-dev xorg-dev
-
-      - run: make lint
-      - run: make test
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+      - run: zig build test --summary all
+      - run: zig build
