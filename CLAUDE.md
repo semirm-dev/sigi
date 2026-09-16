@@ -48,6 +48,27 @@ Intel Mac builds from source, which the README says.
 The version lives in `build.zig.zon` only, and reaches the code as
 `build_options.version`.
 
+## Releases
+
+Pushing a `v*` tag publishes one. `.github/workflows/release.yml` builds every
+target, checks the tag against `build.zig.zon`, and attaches the binaries with
+`SHA256SUMS`. To cut one:
+
+1. Commit the work.
+2. Bump `.version` in `build.zig.zon` and commit that.
+3. `git push`, and let CI go green.
+4. `git tag -a vX.Y.Z -m "sigi X.Y.Z"` and `git push origin vX.Y.Z`.
+
+**Tag the bump commit or something after it, never before it.** A tag on an
+earlier commit fails the release job, because the version it finds is the old
+one. The fix is to move the tag -- delete it locally and on the remote,
+recreate it on the right commit, push again -- not to weaken the check. Forcing
+past it publishes binaries that disagree with their own tag.
+
+`workflow_dispatch` runs the same builds without publishing, because the
+release job is gated on `refs/tags/v*`. Use it to check a build before
+spending a tag on it.
+
 ## Layout
 
 ```
