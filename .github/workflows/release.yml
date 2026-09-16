@@ -1,0 +1,73 @@
+# Builds sigi for every platform it supports.
+#
+# Linux and Windows are raw syscalls and Win32 externs, so they cross-compile
+# from one Ubuntu runner. macOS links Apple's frameworks, and Zig only finds the
+# SDK for native builds, so macOS is a native arm64 build on a macOS runner.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            targets: x86_64-linux aarch64-linux x86_64-windows aarch64-windows
+          - runner: macos-latest
+            targets: native
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0
+
+      # The version lives in build.zig.zon; a tag that disagrees is a mistake.
+      - name: Tag matches build.zig.zon
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: grep -q "\.version = \"${GITHUB_REF_NAME#v}\"" build.zig.zon
+
+      - name: Build
+        run: |
+          for t in ${{ matrix.targets }}; do
+            zig build -Doptimize=ReleaseSmall -Dtarget=$t --prefix out/$t
+            ext=""; case $t in *windows) ext=.exe ;; esac
+            name=$t; [ "$t" = native ] && name=aarch64-macos
+            cp out/$t/bin/sigi$ext sigi-$name$ext
+          done
+
+      - name: Check the native one runs
+        run: zig build -Doptimize=ReleaseSmall && ./zig-out/bin/sigi --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sigi-${{ matrix.runner }}
+          path: sigi-*
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Checksums
+        run: sha256sum sigi-* > SHA256SUMS
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sigi-*
+            SHA256SUMS
