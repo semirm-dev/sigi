@@ -1,5 +1,6 @@
-# Format, test and cross-compile on every push. Only the native platform's
-# code runs in tests, so every other target has to at least compile.
+# Every push runs the same builds a tag would, and keeps none of them. The
+# point is that a release cannot be the first time a target is compiled: the
+# ABI numbers are comptime asserts, so cross-compiling is what checks them.
 name: ci
 
 on: [push, pull_request]
@@ -12,10 +13,10 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: 0.16.0
-      - run: zig fmt --check build.zig build.zig.zon src
-      - run: zig build test --summary all
-      - run: zig build -Dtarget=aarch64-linux
-      - run: zig build -Dtarget=x86_64-windows
+      - run: make lint
+      - run: make test
+      # The same command release.yml runs: every target but macOS.
+      - run: make release
 
   macos:
     runs-on: macos-latest
@@ -24,5 +25,6 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: 0.16.0
-      - run: zig build test --summary all
-      - run: zig build
+      - run: make test
+      # The same command release.yml runs on this runner.
+      - run: make build-osx
