@@ -54,16 +54,22 @@ Pushing a `v*` tag publishes one. `.github/workflows/release.yml` builds every
 target, checks the tag against `build.zig.zon`, and attaches the binaries with
 `SHA256SUMS`. To cut one:
 
-1. Commit the work.
-2. Bump `.version` in `build.zig.zon` and commit that.
-3. `git push`, and let CI go green.
-4. `git tag -a vX.Y.Z -m "sigi X.Y.Z"` and `git push origin vX.Y.Z`.
+1. Commit the work and `git push`. Let CI go green.
+2. `make tag VERSION=x.y.z`, then `git push && git push origin vx.y.z`.
 
-**Tag the bump commit or something after it, never before it.** A tag on an
-earlier commit fails the release job, because the version it finds is the old
-one. The fix is to move the tag -- delete it locally and on the remote,
-recreate it on the right commit, push again -- not to weaken the check. Forcing
-past it publishes binaries that disagree with their own tag.
+`make tag` refuses a dirty tree, rewrites `.version`, builds, checks the binary
+reports the new version, and only then commits and tags. **Use it rather than
+doing the three steps by hand.** The hazard it removes is that a tag on a
+commit which predates the bump fails the release job -- the version it finds is
+the old one -- and ghu lost a release to exactly that. If it happens anyway,
+move the tag (delete it locally and on the remote, recreate it, push again)
+rather than weakening the check: forcing past it publishes binaries that
+disagree with their own tag.
+
+The version lives in `build.zig.zon` because that is Zig's package manifest,
+the way `Cargo.toml` is Rust's. ghu has no equivalent file, so it takes its
+version from the tag instead and has no bump commit at all -- the two projects
+differ here on purpose.
 
 `workflow_dispatch` runs the same builds without publishing, because the
 release job is gated on `refs/tags/v*`. Use it to check a build before
