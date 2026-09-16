@@ -5,4 +5,7 @@ zig-out/
 # Release binaries copied out by CI
 /sigi-*
 
+# Local per-platform builds; releases come from CI
+/bin/
+
 .idea

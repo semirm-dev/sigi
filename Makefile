@@ -48,5 +48,5 @@ release: ## ReleaseSmall binaries under zig-out/release/<target>
 		echo "  zig-out/release/$$t"; \
 	done
 
-clean: ## Remove build output (bin/ is committed, so it stays)
-	rm -rf zig-out .zig-cache
+clean: ## Remove build output
+	rm -rf zig-out .zig-cache $(BIN)
