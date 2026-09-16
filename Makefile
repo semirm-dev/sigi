@@ -7,7 +7,7 @@ ifeq ($(shell uname -s),Darwin)
 TARGETS += native
 endif
 
-.PHONY: help build build-linux build-win build-osx run test lint release clean
+.PHONY: help build build-linux build-win build-osx run test lint release tag clean
 
 help: ## Show available targets
 	@grep -E '^[a-z][a-z-]*:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -49,6 +49,23 @@ release: ## ReleaseSmall binaries under zig-out/release/<target>
 		$(ZIG) build -Doptimize=ReleaseSmall -Dtarget=$$t --prefix zig-out/release/$$t || exit 1; \
 		echo "  zig-out/release/$$t"; \
 	done
+
+# Bump, commit and tag in one step. Doing these by hand leaves a gap between
+# the bump and the tag where a stale HEAD gets tagged instead, which fails the
+# release job -- the version it finds is the old one.
+tag: ## Bump .version, commit it and tag (make tag VERSION=2.0.3)
+	@[ -n "$(VERSION)" ] || { echo "usage: make tag VERSION=2.0.3"; exit 1; }
+	@git diff --quiet && git diff --cached --quiet \
+		|| { echo "working tree is dirty; commit or stash first"; exit 1; }
+	@sed -i.bak 's/\.version = "[^"]*"/.version = "$(VERSION)"/' build.zig.zon && rm -f build.zig.zon.bak
+	@grep -q '\.version = "$(VERSION)"' build.zig.zon || { echo "could not set .version"; exit 1; }
+	@$(ZIG) build
+	@test "$$(./zig-out/bin/sigi --version)" = "sigi $(VERSION)" \
+		|| { echo "built binary does not report $(VERSION)"; exit 1; }
+	@git add build.zig.zon && git commit -q -m "Bump to $(VERSION)"
+	@git tag -a v$(VERSION) -m "sigi $(VERSION)"
+	@echo "  tagged v$(VERSION) on $$(git rev-parse --short HEAD)"
+	@echo "  push with: git push && git push origin v$(VERSION)"
 
 clean: ## Remove build output
 	rm -rf zig-out .zig-cache $(BIN)
