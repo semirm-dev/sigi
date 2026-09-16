@@ -32,9 +32,8 @@ sudo mv sigi-macos-arm64 /usr/local/bin/sigi
 `SHA256SUMS` is attached to the same release; verify with
 `sha256sum --ignore-missing -c SHA256SUMS`.
 
-**There is no Intel Mac binary.** macOS links Apple's frameworks, which Zig
-finds only for a native build, so the release is built on GitHub's macOS runner
-and that runner is arm64. An Intel Mac has to build its own:
+Releases ship Apple Silicon for macOS. Anything else -- an Intel Mac, a
+platform not in the table -- builds from source:
 
 ```bash
 zig build -Doptimize=ReleaseSafe    # zig-out/bin/sigi

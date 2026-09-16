@@ -40,6 +40,11 @@ naming it `sigi-macos`. It is also why releases are built in CI rather
 than by hand: `.github/workflows/release.yml` builds macOS natively on a
 `macos-latest` runner, so no Mac has to be present for a tag to ship.
 
+**Apple Silicon is the only macOS target, deliberately.** `macos-latest` is
+arm64, so that is what a release ships. Intel Macs are not a goal -- do not add
+an Intel runner to the matrix or SDK-path code to `build.zig` to cover them. An
+Intel Mac builds from source, which the README says.
+
 The version lives in `build.zig.zon` only, and reaches the code as
 `build_options.version`.
 
