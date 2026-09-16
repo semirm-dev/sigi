@@ -138,14 +138,14 @@ Nothing appears to move, and every platform counts it as input.
 ## Development
 
 ```bash
-make build     # zig build
+make build     # Debug build for working on sigi -- unoptimised, and large
 make build-linux   # bin/sigi-linux-amd64
 make build-win     # bin/sigi-windows-amd64.exe
 make build-osx     # bin/sigi-macos-<arch> -- native, so a Mac only
 make run ARGS="-i 2s -v"
 make test      # zig build test --summary all
 make lint      # zig fmt --check
-make release   # ReleaseSmall binaries for every target this machine can build
+make release   # bin/sigi-<os>-<arch> for every target, plus SHA256SUMS
 make tag       # bump, commit and tag -- make tag VERSION=2.0.3
 ```
 

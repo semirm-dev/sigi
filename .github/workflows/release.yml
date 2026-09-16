@@ -20,9 +20,9 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-latest
-            targets: x86_64-linux aarch64-linux x86_64-windows aarch64-windows
+            make: release
           - runner: macos-latest
-            targets: native
+            make: build-osx
 
     runs-on: ${{ matrix.runner }}
     steps:
@@ -37,26 +37,12 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: grep -q "\.version = \"${GITHUB_REF_NAME#v}\"" build.zig.zon
 
+      # make owns the target list and the published names, so this workflow
+      # cannot drift from what `make release` produces on a laptop. On Linux
+      # that is everything except macOS; the Mac runner adds the one target
+      # nothing else can build.
       - name: Build
-        run: |
-          for t in ${{ matrix.targets }}; do
-            zig build -Doptimize=ReleaseSmall -Dtarget=$t --prefix out/$t
-            # Zig target triples read <arch>-<os>. Published names are
-            # <os>-<arch> using the words people recognise, which is what jq
-            # and most single-binary CLIs ship, and what ghu ships. A target
-            # with no name here is a mistake, not something to publish as a
-            # triple.
-            case $t in
-              x86_64-linux)    name=linux-amd64 ;;
-              aarch64-linux)   name=linux-arm64 ;;
-              x86_64-windows)  name=windows-amd64 ;;
-              aarch64-windows) name=windows-arm64 ;;
-              native)          name=macos-arm64 ;;
-              *) echo "no published name for target $t"; exit 1 ;;
-            esac
-            ext=""; case $t in *windows) ext=.exe ;; esac
-            cp out/$t/bin/sigi$ext sigi-$name$ext
-          done
+        run: make ${{ matrix.make }}
 
       - name: Check the native one runs
         run: zig build -Doptimize=ReleaseSmall && ./zig-out/bin/sigi --version
@@ -64,7 +50,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: sigi-${{ matrix.runner }}
-          path: sigi-*
+          path: bin/sigi-*
 
   release:
     needs: build

@@ -1,18 +1,25 @@
 # A thin wrapper: the build lives in build.zig, and these only save typing.
 ZIG     ?= zig
 BIN     := bin
-TARGETS := x86_64-linux aarch64-linux x86_64-windows aarch64-windows
-# Zig only finds the macOS SDK for native builds, so a Mac adds just itself.
+# <published name>:<zig target>. Published names read <os>-<arch> with the
+# words people recognise; Zig's own triples read the other way round. macOS is
+# not in the list because Zig finds Apple's frameworks only for a native build,
+# so a Mac adds itself and nothing else can.
+TARGETS := linux-amd64:x86_64-linux linux-arm64:aarch64-linux \
+           windows-amd64:x86_64-windows windows-arm64:aarch64-windows
+MACARCH := $(shell uname -m | sed -e s/x86_64/amd64/)
 ifeq ($(shell uname -s),Darwin)
-TARGETS += native
+TARGETS += macos-$(MACARCH):native
 endif
+# macOS has shasum instead.
+SHASUM := $(shell command -v sha256sum >/dev/null 2>&1 && echo sha256sum || echo shasum -a 256)
 
 .PHONY: help build build-linux build-win build-osx run test lint release tag clean
 
 help: ## Show available targets
 	@grep -E '^[a-z][a-z-]*:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
 
-build: ## Build zig-out/bin/sigi for this machine
+build: ## Debug build of zig-out/bin/sigi, for working on sigi
 	$(ZIG) build
 
 build-linux: ## ReleaseSmall bin/sigi-linux-amd64
@@ -31,9 +38,8 @@ build-osx: ## ReleaseSmall bin/sigi-macos-<arch> (on a Mac; cannot cross-compile
 	@[ "$$(uname -s)" = "Darwin" ] || { echo "make build-osx needs a Mac: Zig only finds the frameworks for a native build"; exit 1; }
 	$(ZIG) build -Doptimize=ReleaseSmall --prefix zig-out/build-osx
 	@mkdir -p $(BIN)
-	@arch=$$(uname -m); case $$arch in x86_64) arch=amd64 ;; esac; \
-		cp zig-out/build-osx/bin/sigi $(BIN)/sigi-macos-$$arch; \
-		echo "  $(BIN)/sigi-macos-$$arch"
+	@cp zig-out/build-osx/bin/sigi $(BIN)/sigi-macos-$(MACARCH)
+	@echo "  $(BIN)/sigi-macos-$(MACARCH)"
 
 run: ## Run sigi; pass flags with ARGS="-i 30s -v"
 	$(ZIG) build run -- $(ARGS)
@@ -44,11 +50,18 @@ test: ## Run the unit tests
 lint: ## Check formatting
 	$(ZIG) fmt --check build.zig build.zig.zon src
 
-release: ## ReleaseSmall binaries under zig-out/release/<target>
-	@for t in $(TARGETS); do \
-		$(ZIG) build -Doptimize=ReleaseSmall -Dtarget=$$t --prefix zig-out/release/$$t || exit 1; \
-		echo "  zig-out/release/$$t"; \
+# What a tag publishes, built here: same names, same flags, plus checksums.
+# On anything but a Mac that is every platform except macOS.
+release: ## ReleaseSmall bin/sigi-<os>-<arch> for every target, plus SHA256SUMS
+	@rm -rf $(BIN) && mkdir -p $(BIN)
+	@set -e; for t in $(TARGETS); do \
+		name=$${t%%:*}; target=$${t##*:}; \
+		ext=""; case $$name in windows-*) ext=.exe ;; esac; \
+		$(ZIG) build -Doptimize=ReleaseSmall -Dtarget=$$target --prefix zig-out/release/$$name; \
+		cp zig-out/release/$$name/bin/sigi$$ext $(BIN)/sigi-$$name$$ext; \
+		echo "  $(BIN)/sigi-$$name$$ext"; \
 	done
+	@cd $(BIN) && $(SHASUM) sigi-* > SHA256SUMS && echo "  $(BIN)/SHA256SUMS"
 
 # Bump, commit and tag in one step. Doing these by hand leaves a gap between
 # the bump and the tag where a stale HEAD gets tagged instead, which fails the

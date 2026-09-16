@@ -20,8 +20,12 @@ zig build                        # zig-out/bin/sigi
 zig build run -- -i 2s -v        # run from source; flags after --
 zig build test --summary all
 zig fmt --check build.zig build.zig.zon src
-make build|run|test|lint|release # thin wrappers over the above
-make build-linux|build-win|build-osx  # ReleaseSmall into bin/, untracked
+make build|run|test|lint         # thin wrappers over the above
+make release                     # bin/sigi-<os>-<arch> for every target it can
+                                 # build here, plus SHA256SUMS -- exactly what a
+                                 # tag publishes, and what release.yml calls, so
+                                 # the target list and the names have one home
+make build-linux|build-win|build-osx  # one platform each, same names
 ```
 
 Released binaries are named `sigi-<os>-<arch>` -- `macos`/`linux`/`windows`
