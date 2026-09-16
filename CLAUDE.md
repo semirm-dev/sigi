@@ -24,6 +24,12 @@ make build|run|test|lint|release # thin wrappers over the above
 make build-linux|build-win|build-osx  # ReleaseSmall into bin/, untracked
 ```
 
+Released binaries are named `sigi-<os>-<arch>` -- `macos`/`linux`/`windows`
+and `amd64`/`arm64` -- which is what jq and most single-binary CLIs publish,
+and what ghu publishes. Zig's own triples read the other way round
+(`x86_64-linux`), so `release.yml` maps each target to a name and fails on a
+target it has no name for, rather than publishing a triple.
+
 Cross-compile with `-Dtarget=`. Linux and Windows targets build from any host.
 macOS only builds natively (`zig build`, or `-Dtarget=native`) on a Mac: Zig
 finds the SDK only for native builds, and an explicit `-Dtarget=aarch64-macos`

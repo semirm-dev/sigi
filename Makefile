@@ -15,23 +15,25 @@ help: ## Show available targets
 build: ## Build zig-out/bin/sigi for this machine
 	$(ZIG) build
 
-build-linux: ## ReleaseSmall bin/sigi-linux (x86_64)
+build-linux: ## ReleaseSmall bin/sigi-linux-amd64
 	$(ZIG) build -Doptimize=ReleaseSmall -Dtarget=x86_64-linux --prefix zig-out/build-linux
-	@mkdir -p $(BIN) && cp zig-out/build-linux/bin/sigi $(BIN)/sigi-linux
-	@echo "  $(BIN)/sigi-linux"
+	@mkdir -p $(BIN) && cp zig-out/build-linux/bin/sigi $(BIN)/sigi-linux-amd64
+	@echo "  $(BIN)/sigi-linux-amd64"
 
-build-win: ## ReleaseSmall bin/sigi-windows.exe (x86_64)
+build-win: ## ReleaseSmall bin/sigi-windows-amd64.exe
 	$(ZIG) build -Doptimize=ReleaseSmall -Dtarget=x86_64-windows --prefix zig-out/build-win
-	@mkdir -p $(BIN) && cp zig-out/build-win/bin/sigi.exe $(BIN)/sigi-windows.exe
-	@echo "  $(BIN)/sigi-windows.exe"
+	@mkdir -p $(BIN) && cp zig-out/build-win/bin/sigi.exe $(BIN)/sigi-windows-amd64.exe
+	@echo "  $(BIN)/sigi-windows-amd64.exe"
 
 # Native only: Zig finds Apple's frameworks for a native build and nowhere
 # else, so cross-compiling this one dies on -framework CoreGraphics.
-build-osx: ## ReleaseSmall bin/sigi-macos (on a Mac; cannot cross-compile)
+build-osx: ## ReleaseSmall bin/sigi-macos-<arch> (on a Mac; cannot cross-compile)
 	@[ "$$(uname -s)" = "Darwin" ] || { echo "make build-osx needs a Mac: Zig only finds the frameworks for a native build"; exit 1; }
 	$(ZIG) build -Doptimize=ReleaseSmall --prefix zig-out/build-osx
-	@mkdir -p $(BIN) && cp zig-out/build-osx/bin/sigi $(BIN)/sigi-macos
-	@echo "  $(BIN)/sigi-macos"
+	@mkdir -p $(BIN)
+	@arch=$$(uname -m); case $$arch in x86_64) arch=amd64 ;; esac; \
+		cp zig-out/build-osx/bin/sigi $(BIN)/sigi-macos-$$arch; \
+		echo "  $(BIN)/sigi-macos-$$arch"
 
 run: ## Run sigi; pass flags with ARGS="-i 30s -v"
 	$(ZIG) build run -- $(ARGS)

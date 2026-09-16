@@ -11,18 +11,37 @@ left behind when you close the terminal.
 
 ## Install
 
-Download a binary for your platform from the
-[releases](https://github.com/semirm-dev/sigi/releases), or build one with
-[Zig](https://ziglang.org/download/) 0.16.0:
+Every [release](https://github.com/semirm-dev/sigi/releases) carries a binary
+per platform -- pick the one for your machine, make it executable, and put it on
+your `PATH`:
+
+| | |
+|---|---|
+| macOS, Apple Silicon | `sigi-macos-arm64` |
+| Linux, x86-64 | `sigi-linux-amd64` |
+| Linux, ARM64 | `sigi-linux-arm64` |
+| Windows, x86-64 | `sigi-windows-amd64.exe` |
+| Windows, ARM64 | `sigi-windows-arm64.exe` |
+
+```bash
+curl -LO https://github.com/semirm-dev/sigi/releases/latest/download/sigi-macos-arm64
+chmod +x sigi-macos-arm64
+sudo mv sigi-macos-arm64 /usr/local/bin/sigi
+```
+
+`SHA256SUMS` is attached to the same release; verify with
+`sha256sum --ignore-missing -c SHA256SUMS`.
+
+**There is no Intel Mac binary.** macOS links Apple's frameworks, which Zig
+finds only for a native build, so the release is built on GitHub's macOS runner
+and that runner is arm64. An Intel Mac has to build its own:
 
 ```bash
 zig build -Doptimize=ReleaseSafe    # zig-out/bin/sigi
 ```
 
 There are no dependencies, no C toolchain, and no system libraries to install.
-Linux and Windows binaries cross-compile from any machine. macOS links Apple's
-frameworks, which Zig only finds for a native build, so macOS binaries are built
-on a Mac for that Mac (releases ship arm64).
+Linux and Windows binaries cross-compile from any machine.
 
 ## Making it work
 
@@ -121,9 +140,9 @@ Nothing appears to move, and every platform counts it as input.
 
 ```bash
 make build     # zig build
-make build-linux   # bin/sigi-linux
-make build-win     # bin/sigi-windows.exe
-make build-osx     # bin/sigi-macos -- native, so a Mac only
+make build-linux   # bin/sigi-linux-amd64
+make build-win     # bin/sigi-windows-amd64.exe
+make build-osx     # bin/sigi-macos-<arch> -- native, so a Mac only
 make run ARGS="-i 2s -v"
 make test      # zig build test --summary all
 make lint      # zig fmt --check
