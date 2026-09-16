@@ -121,6 +121,9 @@ Nothing appears to move, and every platform counts it as input.
 
 ```bash
 make build     # zig build
+make build-linux   # bin/sigi-linux
+make build-win     # bin/sigi-windows.exe
+make build-osx     # bin/sigi-macos -- native, so a Mac only
 make run ARGS="-i 2s -v"
 make test      # zig build test --summary all
 make lint      # zig fmt --check

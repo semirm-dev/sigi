@@ -21,13 +21,16 @@ zig build run -- -i 2s -v        # run from source; flags after --
 zig build test --summary all
 zig fmt --check build.zig build.zig.zon src
 make build|run|test|lint|release # thin wrappers over the above
+make build-linux|build-win|build-osx  # ReleaseSmall into bin/, committed
 ```
 
 Cross-compile with `-Dtarget=`. Linux and Windows targets build from any host.
 macOS only builds natively (`zig build`, or `-Dtarget=native`) on a Mac: Zig
 finds the SDK only for native builds, and an explicit `-Dtarget=aarch64-macos`
 fails to find the frameworks. Making that work needs SDK-path code in
-`build.zig`; it was left out on purpose.
+`build.zig`; it was left out on purpose. This is why `make build-osx` checks
+`uname` and refuses rather than quietly building a native Linux binary and
+naming it `sigi-macos`, and why `bin/` ships two of the three.
 
 The version lives in `build.zig.zon` only, and reaches the code as
 `build_options.version`.
