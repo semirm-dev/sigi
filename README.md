@@ -146,6 +146,7 @@ make run ARGS="-i 2s -v"
 make test      # zig build test --summary all
 make lint      # zig fmt --check
 make release   # ReleaseSmall binaries for every target this machine can build
+make tag       # bump, commit and tag -- make tag VERSION=2.0.3
 ```
 
 ```
@@ -154,3 +155,21 @@ src/linux.zig    /dev/uinput virtual mouse
 src/macos.zig    Quartz event, Accessibility check
 src/windows.zig  SendInput
 ```
+
+## Releasing
+
+```bash
+make tag VERSION=2.0.3
+git push && git push origin v2.0.3
+```
+
+The version lives in `build.zig.zon` and nowhere else. `make tag` refuses a
+dirty tree, rewrites `.version`, builds, checks `sigi --version` reports the new
+number, and only then commits the bump and tags that commit -- so the tag cannot
+land on a commit that predates it, which is the way this goes wrong when the
+three steps are done by hand.
+
+Pushing the tag runs [`release.yml`](.github/workflows/release.yml): Linux and
+Windows cross-compile on one runner, macOS builds natively on a macOS runner,
+and the binaries are published with `SHA256SUMS` as a
+[release](https://github.com/semirm-dev/sigi/releases).
