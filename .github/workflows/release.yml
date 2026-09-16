@@ -20,9 +20,11 @@ jobs:
       matrix:
         include:
           - runner: ubuntu-latest
-            make: release
+            artifacts: bin/sigi-*
+          # A Mac builds everything, but only its macOS binary is wanted here;
+          # the Linux runner already has the rest.
           - runner: macos-latest
-            make: build-osx
+            artifacts: bin/sigi-macos-*
 
     runs-on: ${{ matrix.runner }}
     steps:
@@ -38,11 +40,8 @@ jobs:
         run: grep -q "\.version = \"${GITHUB_REF_NAME#v}\"" build.zig.zon
 
       # make owns the target list and the published names, so this workflow
-      # cannot drift from what `make release` produces on a laptop. On Linux
-      # that is everything except macOS; the Mac runner adds the one target
-      # nothing else can build.
-      - name: Build
-        run: make ${{ matrix.make }}
+      # cannot drift from what `make release` produces on a laptop.
+      - run: make release
 
       - name: Check the native one runs
         run: zig build -Doptimize=ReleaseSmall && ./zig-out/bin/sigi --version
@@ -50,7 +49,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: sigi-${{ matrix.runner }}
-          path: bin/sigi-*
+          path: ${{ matrix.artifacts }}
 
   release:
     needs: build

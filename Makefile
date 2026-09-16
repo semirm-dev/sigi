@@ -14,32 +14,13 @@ endif
 # macOS has shasum instead.
 SHASUM := $(shell command -v sha256sum >/dev/null 2>&1 && echo sha256sum || echo shasum -a 256)
 
-.PHONY: help build build-linux build-win build-osx run test lint release tag clean
+.PHONY: help build run test lint release tag clean
 
 help: ## Show available targets
 	@grep -E '^[a-z][a-z-]*:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
 
 build: ## Debug build of zig-out/bin/sigi, for working on sigi
 	$(ZIG) build
-
-build-linux: ## ReleaseSmall bin/sigi-linux-amd64
-	$(ZIG) build -Doptimize=ReleaseSmall -Dtarget=x86_64-linux --prefix zig-out/build-linux
-	@mkdir -p $(BIN) && cp zig-out/build-linux/bin/sigi $(BIN)/sigi-linux-amd64
-	@echo "  $(BIN)/sigi-linux-amd64"
-
-build-win: ## ReleaseSmall bin/sigi-windows-amd64.exe
-	$(ZIG) build -Doptimize=ReleaseSmall -Dtarget=x86_64-windows --prefix zig-out/build-win
-	@mkdir -p $(BIN) && cp zig-out/build-win/bin/sigi.exe $(BIN)/sigi-windows-amd64.exe
-	@echo "  $(BIN)/sigi-windows-amd64.exe"
-
-# Native only: Zig finds Apple's frameworks for a native build and nowhere
-# else, so cross-compiling this one dies on -framework CoreGraphics.
-build-osx: ## ReleaseSmall bin/sigi-macos-<arch> (on a Mac; cannot cross-compile)
-	@[ "$$(uname -s)" = "Darwin" ] || { echo "make build-osx needs a Mac: Zig only finds the frameworks for a native build"; exit 1; }
-	$(ZIG) build -Doptimize=ReleaseSmall --prefix zig-out/build-osx
-	@mkdir -p $(BIN)
-	@cp zig-out/build-osx/bin/sigi $(BIN)/sigi-macos-$(MACARCH)
-	@echo "  $(BIN)/sigi-macos-$(MACARCH)"
 
 run: ## Run sigi; pass flags with ARGS="-i 30s -v"
 	$(ZIG) build run -- $(ARGS)
@@ -51,7 +32,9 @@ lint: ## Check formatting
 	$(ZIG) fmt --check build.zig build.zig.zon src
 
 # What a tag publishes, built here: same names, same flags, plus checksums.
-# On anything but a Mac that is every platform except macOS.
+# Every target this machine can build -- which on a Mac includes macOS, and
+# nowhere else does, because Zig finds Apple's frameworks only for a native
+# build. That is the whole rule; there is no per-platform target to pick from.
 release: ## ReleaseSmall bin/sigi-<os>-<arch> for every target, plus SHA256SUMS
 	@rm -rf $(BIN) && mkdir -p $(BIN)
 	@set -e; for t in $(TARGETS); do \

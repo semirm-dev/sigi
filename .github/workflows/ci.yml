@@ -31,5 +31,6 @@ jobs:
         with:
           version: 0.16.0
       - run: make test
-      # The same command release.yml runs on this runner.
-      - run: make build-osx
+      # The same command release.yml runs. On a Mac that includes macOS, which
+      # is the target no other runner can build.
+      - run: make release
