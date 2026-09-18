@@ -24,6 +24,9 @@ const INPUT = extern struct {
     },
 };
 
+// Like macos.zig's externs, this is a bare C ABI declaration, not a std
+// wrapper. Unlike macOS's frameworks, user32 needs no linkFramework-equivalent
+// call in build.zig: Zig's default Windows target libs link it already.
 extern "user32" fn SendInput(count: windows.UINT, inputs: [*]const INPUT, size: c_int) callconv(.winapi) windows.UINT;
 
 comptime {

@@ -17,9 +17,11 @@ pub fn build(b: *std.Build) void {
     });
     mod.addOptions("build_options", options);
 
-    // Quartz events and the Accessibility check. Nothing to link elsewhere:
-    // Linux is raw syscalls, and Windows' user32 comes from the extern.
-    // Zig only finds the macOS SDK for native builds, so macOS is never cross-compiled.
+    // Quartz events and the Accessibility check, for macos.zig's externs.
+    // Only macOS needs this: Linux goes through std.os.linux, and Windows'
+    // `extern "user32"` is linked automatically by Zig's default Windows
+    // libs. Zig only finds the macOS SDK for native builds, so macOS is
+    // never cross-compiled.
     if (target.result.os.tag == .macos) {
         mod.linkFramework("CoreGraphics", .{});
         mod.linkFramework("CoreFoundation", .{});
