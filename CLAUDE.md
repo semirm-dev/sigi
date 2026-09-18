@@ -28,10 +28,10 @@ make release                     # bin/sigi-<os>-<arch> for every target it can
 ```
 
 Released binaries are named `sigi-<os>-<arch>` -- `macos`/`linux`/`windows`
-and `amd64`/`arm64` -- which is what jq and most single-binary CLIs publish,
-and what ghu publishes. Zig's own triples read the other way round
-(`x86_64-linux`), so `release.yml` maps each target to a name and fails on a
-target it has no name for, rather than publishing a triple.
+and `amd64`/`arm64` -- which is what jq and most single-binary CLIs publish.
+Zig's own triples read the other way round (`x86_64-linux`), so
+`release.yml` maps each target to a name and fails on a target it has no name
+for, rather than publishing a triple.
 
 Cross-compile with `-Dtarget=`. Linux and Windows targets build from any host.
 macOS only builds natively (`zig build`, or `-Dtarget=native`) on a Mac: Zig
@@ -63,16 +63,12 @@ target, checks the tag against `build.zig.zon`, and attaches the binaries with
 `make tag` refuses a dirty tree, rewrites `.version`, builds, checks the binary
 reports the new version, and only then commits and tags. **Use it rather than
 doing the three steps by hand.** The hazard it removes is that a tag on a
-commit which predates the bump fails the release job -- the version it finds is
-the old one -- and ghu lost a release to exactly that. If it happens anyway,
-move the tag (delete it locally and on the remote, recreate it, push again)
-rather than weakening the check: forcing past it publishes binaries that
-disagree with their own tag.
+commit which predates the bump fails the release job, because the version it
+finds is the old one. If it happens anyway, move the tag (delete it locally
+and on the remote, recreate it, push again) rather than weakening the check:
+forcing past it publishes binaries that disagree with their own tag.
 
-The version lives in `build.zig.zon` because that is Zig's package manifest,
-the way `Cargo.toml` is Rust's. ghu has no equivalent file, so it takes its
-version from the tag instead and has no bump commit at all -- the two projects
-differ here on purpose.
+The version lives in `build.zig.zon` because that is Zig's package manifest.
 
 `workflow_dispatch` runs the same builds without publishing, because the
 release job is gated on `refs/tags/v*`. Use it to check a build before

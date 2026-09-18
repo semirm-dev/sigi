@@ -127,14 +127,6 @@ Ctrl-C stops it.
 Each nudge moves the cursor one pixel right, waits 10ms, and moves it back.
 Nothing appears to move, and every platform counts it as input.
 
-## Upgrading from the Go version
-
-- `--action` is gone. The mouse is the only action, and on Linux it now works
-  under Wayland, which is what the keyboard action existed for.
-- `--interval 0` is an error rather than silently falling back to `2m`.
-- Linux needs `/dev/uinput` access instead of an X11 session.
-- `go install` no longer applies; use a release binary or `zig build`.
-
 ## Development
 
 ```bash
