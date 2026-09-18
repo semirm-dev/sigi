@@ -28,23 +28,44 @@ const usage =
 
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
+
     var buffer: [256]u8 = undefined;
     var stdout: std.Io.File.Writer = .init(.stdout(), io, &buffer);
     const out = &stdout.interface;
 
+    const args = try init.minimal.args.toSlice(init.arena.allocator());
+    const parsed = try parseArgs(args, out) orelse return;
+
+    const interval = parseDuration(parsed.interval_text) orelse
+        fail("bad interval \"{s}\": use a whole number with ms, s, m or h, e.g. 30s", .{parsed.interval_text});
+
+    mouse.init() catch |err| fail("{s}", .{describe(err)});
+    try out.print("sigi: mouse every {s}, ctrl-c to stop\n", .{parsed.interval_text});
+    try out.flush();
+
+    try run(io, out, interval, parsed.verbose);
+}
+
+/// Reads flags out of argv. Null means help or --version already printed
+/// their output and main should just return.
+fn parseArgs(args: []const [:0]const u8, out: *std.Io.Writer) !?struct {
+    interval_text: []const u8,
+    verbose: bool,
+} {
     var interval_text: []const u8 = "2m";
     var verbose = false;
 
-    const args = try init.minimal.args.toSlice(init.arena.allocator());
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
         const arg = args[i];
         if (eql(arg, "-h") or eql(arg, "--help")) {
             try out.writeAll(usage);
-            return out.flush();
+            try out.flush();
+            return null;
         } else if (eql(arg, "--version")) {
             try out.print("sigi {s}\n", .{build_options.version});
-            return out.flush();
+            try out.flush();
+            return null;
         } else if (eql(arg, "-v") or eql(arg, "--verbose")) {
             verbose = true;
         } else if ((eql(arg, "-i") or eql(arg, "--interval")) and i + 1 < args.len) {
@@ -54,13 +75,11 @@ pub fn main(init: std.process.Init) !void {
             fail("bad argument \"{s}\", see sigi --help", .{arg});
         }
     }
-    const interval = parseDuration(interval_text) orelse
-        fail("bad interval \"{s}\": use a whole number with ms, s, m or h, e.g. 30s", .{interval_text});
+    return .{ .interval_text = interval_text, .verbose = verbose };
+}
 
-    mouse.init() catch |err| fail("{s}", .{describe(err)});
-    try out.print("sigi: mouse every {s}, ctrl-c to stop\n", .{interval_text});
-    try out.flush();
-
+/// Nudges forever on `interval`, until Ctrl-C or a nudge fails.
+fn run(io: std.Io, out: *std.Io.Writer, interval: u64, verbose: bool) !void {
     while (true) {
         try io.sleep(.fromNanoseconds(interval), .awake);
         nudge(io) catch |err| fail("{s}", .{describe(err)});
